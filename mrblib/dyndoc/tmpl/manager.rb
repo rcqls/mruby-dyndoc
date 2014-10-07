@@ -20,21 +20,21 @@ module Dyndoc
     end
 
     # Maybe better located inside server.rb
-    # def TemplateManager.initR
-    #   first=require "R4rb" #save if it the first initialization!
-    #   Dyndoc.warn "FIRST INIT OF R!!!! => #{first}"
-    #   Array.initR
-    #   TemplateManager.interactive
-    #   #p "client";p $cfg_dyn;p interactive
-    #   R4rb << "rm(list=ls(all=TRUE))" if !first and !@@interactive #remove all initial variables if previous documents session
-    #   R4rb << ".dynStack<-new.env()" #used for R variables used by dyndoc
-    #   RServer.init_envir 
-    #   RServer.init_filter
-    #   ## ruby and R init for dynArray stuff
-    #   require "dyndoc/common/dynArray"
-    #   lib_root=File.join(File.dirname(__FILE__),[".."]*5) #or $dyn_gem_root
-    #   R4rb << "source('"+File.join(lib_root,"share","R","dynArray.R").gsub('\\','/')+"')"
-    # end
+    def TemplateManager.initR
+      first=!R4mrb.alive?
+      Dyndoc.warn "FIRST INIT OF R!!!!"
+      R4mrb.init
+      TemplateManager.interactive
+      #p "client";p $cfg_dyn;p interactive
+      R4mrb << "rm(list=ls(all=TRUE))" if !first and !@@interactive #remove all initial variables if previous documents session
+      R4mrb << ".dynStack<-new.env()" #used for R variables used by dyndoc
+      RServer.init_envir 
+      RServer.init_filter
+      # ## ruby and R init for dynArray stuff
+      # require "dyndoc/common/dynArray"
+      # lib_root=File.join(File.dirname(__FILE__),[".."]*5) #or $dyn_gem_root
+      # R4mrb << "source('"+File.join(lib_root,"share","R","dynArray.R").gsub('\\','/')+"')"
+    end
 
     # def TemplateManager.initJulia
     #   first=require "jl4rb" #save if it the first initialization!
@@ -64,10 +64,12 @@ module Dyndoc
     def initialize(tmpl_cfg,with=true)
       # just in case it is not yet initialized!
       $cfg_dyn={} unless $cfg_dyn
+      p [:mngr_cfg,$cfg_dyn]
       unless $cfg_dyn[:langs]
         $cfg_dyn[:langs]=[] 
         $cfg_dyn[:langs] << :R if with==true
       end
+      p [:mngr_cfg2,$cfg_dyn]
 #puts "DEBUT INIT TemplateManager"
       @tmpl_cfg=tmpl_cfg
 #=begin
@@ -75,7 +77,8 @@ module Dyndoc
 #=end
       ## default system root appended
       ## To remove: Dyndoc.setRootDoc(@cfg[:rootDoc],Dyndoc.sysRootDoc("root_"+@cfg[:enc]),false)
-      # TemplateManager.initR if $cfg_dyn[:langs].include? :R
+      p [:mngr_with_R,($cfg_dyn[:langs].include? :R)]
+      TemplateManager.initR if $cfg_dyn[:langs].include? :R
       # TemplateManager.initJulia if $cfg_dyn[:langs].include? :jl
       rbenvir_init(binding)
       @rEnvir=["Global"]

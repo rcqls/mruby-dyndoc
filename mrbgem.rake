@@ -19,8 +19,8 @@ MRuby::Gem::Specification.new('mruby-dyndoc') do |spec|
 		'dyndoc/envir.rb'].map{|e| File.join("#{dir}/mrblib",e)}
 
 
-  spec.mruby.cc.defines << 'ENABLE_DEBUG'
-  spec.cc.defines << 'ENABLE_DEBUG'
+  #spec.mruby.cc.defines << 'ENABLE_DEBUG'
+  #spec.cc.defines << 'ENABLE_DEBUG'
 
   # Add GEM dependency mruby-parser.
   # The version must be between 1.0.0 and 1.5.2 .

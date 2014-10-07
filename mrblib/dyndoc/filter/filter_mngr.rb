@@ -386,6 +386,7 @@ module Dyndoc
         end
         #puts "#{txt} in #{@rEnvir[0]} is #{res}"
       when ":r","#r"
+        #Dyndoc.warn "#r",@rEnvir[0]
         return txt if @mode==:pre
         res=RServer.safe_output(txt2,@rEnvir[0],:pretty=>true)
         if res[0]=='try-error'

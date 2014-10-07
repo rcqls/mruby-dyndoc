@@ -85,11 +85,12 @@ module Dyndoc
     end
 
     def eval_RCODE(code,filter,opts={:pretty => true}) #pretty=true,capture=nil)
-#Dyndoc.warn "eval_RCODE",p code
+#Dyndoc.warn "eval_RCODE",code
 #Dyndoc.warn "rEnvir[0]",@rEnvir[0] #;"print(ls(.env4dyn$#{@rEnvir[0]}))".to_R
 #Dyndoc.warn "output",RServer.output(code.strip,@rEnvir[0],pretty)
       Utils.clean_eol!(code)
-      #puts "eval_RCODE";p RServer.safe_output(code,@rEnvir[0],pretty,capture)
+      #puts "eval_RCODE";p [code ,@rEnvir[0]]
+      #p RServer.safe_output(code,@rEnvir[0],opts)
       return filter.convert(RServer.safe_output(code,@rEnvir[0],opts),"#")
     end
 

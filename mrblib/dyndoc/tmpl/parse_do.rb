@@ -920,82 +920,76 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
       end
     end
 
-  end
-  end
-end    
+    def do_verb(tex,blck,filter)
+      i=0
+      i,*b2=next_block(blck,i)
+      code=parse(b2,filter)
+      Utils.escape!(code,[["{","__OPEN__"],["}","__CLOSE__"]])
+      tex += Dyndoc::VERB[@cfg[:format_doc]][:begin] + "\n"
+      tex += code.strip + "\n"
+      tex += Dyndoc::VERB[@cfg[:format_doc]][:end] + "\n"
+    end
 
-######## TO CONTINUE
+    def do_eval(tex,blck,filter)
+      i=0
+#puts "do_eval";p blck
+#puts '#{code}';p @vars["code"]
+      i,*b2=next_block(blck,i)
+      code=parse(b2,filter)
+#puts "do_eval: code";p code
+      Utils.escape_delim!(code)
+#puts "do_eval2: code";p code
+      mode=[]
+      while code=~/^(test|pre|last|raw)\|.*/
+        code = code[($1.length+1)..-1]
+        mode << $1.to_sym
+      end
+      code=Dyndoc::Utils.dyndoc_raw_text(code) if mode.include? :test
+      #puts "do_eval:mode";p mode;p code
+      #PUT THE FOLLOWING IN THE DOCUMENTATION: 
+      #puts "WARNING: {#dyn] accept :last and :raw in this order!" unless (mode - [:last,:raw]).empty?
+      if mode.include? :pre
+	      tex2=prepare_output(code) 
+#puts "TOTO";p output_pre_model;p @pre_model
+#puts "do_eval:PRE tex2";p tex2
+      else
+	      code="{#document][#main]"+code+"[#}"
+#puts "do_eval:code";p code
+	      tex2=parse(code,filter)
+      end
+      Utils.dyndoc_raw_text!(tex2) if mode.include? :last
+#puts  "do_eval:tex2";p tex2
+      tex2=Utils.dyndoc_raw_text_add(tex2) if mode.include? :raw
+      tex += tex2
+      if i<blck.length-1 and blck[i+=1]==:to
+        i,*b2=next_block(blck,i)
+        file=parse(b2,filter)
+        unless file.empty?
+          File.open(file,"w") do |f|
+            f << tex2
+          end
+        end
+      end
+    end
 
-#     def do_verb(tex,blck,filter)
-#       i=0
-#       i,*b2=next_block(blck,i)
-#       code=parse(b2,filter)
-#       Utils.escape!(code,[["{","__OPEN__"],["}","__CLOSE__"]])
-#       tex += Dyndoc::VERB[@cfg[:format_doc]][:begin] + "\n"
-#       tex += code.strip + "\n"
-#       tex += Dyndoc::VERB[@cfg[:format_doc]][:end] + "\n"
-#     end
-
-#     def do_eval(tex,blck,filter)
-#       i=0
-# #puts "do_eval";p blck
-# #puts '#{code}';p @vars["code"]
-#       i,*b2=next_block(blck,i)
-#       code=parse(b2,filter)
-# #puts "do_eval: code";p code
-#       Utils.escape_delim!(code)
-# #puts "do_eval2: code";p code
-#       mode=[]
-#       while code=~/^(test|pre|last|raw)\|.*/
-#         code = code[($1.length+1)..-1]
-#         mode << $1.to_sym
-#       end
-#       code=Dyndoc::Utils.dyndoc_raw_text(code) if mode.include? :test
-#       #puts "do_eval:mode";p mode;p code
-#       #PUT THE FOLLOWING IN THE DOCUMENTATION: 
-#       #puts "WARNING: {#dyn] accept :last and :raw in this order!" unless (mode - [:last,:raw]).empty?
-#       if mode.include? :pre
-# 	      tex2=prepare_output(code) 
-# #puts "TOTO";p output_pre_model;p @pre_model
-# #puts "do_eval:PRE tex2";p tex2
-#       else
-# 	      code="{#document][#main]"+code+"[#}"
-# #puts "do_eval:code";p code
-# 	      tex2=parse(code,filter)
-#       end
-#       Utils.dyndoc_raw_text!(tex2) if mode.include? :last
-# #puts  "do_eval:tex2";p tex2
-#       tex2=Utils.dyndoc_raw_text_add(tex2) if mode.include? :raw
-#       tex += tex2
-#       if i<blck.length-1 and blck[i+=1]==:to
-#         i,*b2=next_block(blck,i)
-#         file=parse(b2,filter)
-#         unless file.empty?
-#           File.open(file,"w") do |f|
-#             f << tex2
-#           end
-#         end
-#       end
-#     end
-
-#     def do_ifndef(tex,blck,filter)
-#       i=0
-#       i,*b2=next_block(blck,i)
-#       file=parse(b2,filter).strip
-# #p file
-#       if File.exist?(file)
-#         tex += File.read(file)
-#       elsif blck[i+=1]==:<<
-# #p blck[(i+1)..-1]
-#         tex2=parse(blck[(i+1)..-1],filter)
-# #p tex2
-#         file=file[1..-1] if file[0,1]=="!"
-#         File.open(file,"w") do |f|
-#           f << tex2
-#         end
-#         tex += tex2
-#       end
-#     end
+    def do_ifndef(tex,blck,filter)
+      i=0
+      i,*b2=next_block(blck,i)
+      file=parse(b2,filter).strip
+#p file
+      if File.exist?(file)
+        tex += File.read(file)
+      elsif blck[i+=1]==:<<
+#p blck[(i+1)..-1]
+        tex2=parse(blck[(i+1)..-1],filter)
+#p tex2
+        file=file[1..-1] if file[0,1]=="!"
+        File.open(file,"w") do |f|
+          f << tex2
+        end
+        tex += tex2
+      end
+    end
 
     def do_input(tex,blck,filter)
       tmpl=parse_args(blck[1],filter)
@@ -1093,40 +1087,40 @@ end
       eval_func(call,code,rbEnvir)
     end
 
-#     def do_meth(tex,blck,filter)
-# #puts "do_meth";p blck
-#       call,code=make_def(blck,filter)
-# #puts "do_meth";p call;p code
-#       eval_meth(call,code)
-#     end
+    def do_meth(tex,blck,filter)
+#puts "do_meth";p blck
+      call,code=make_def(blck,filter)
+#puts "do_meth";p call;p code
+      eval_meth(call,code)
+    end
 
-#     def do_new(tex,blck,filter)
-#       #first declaration of the object
-# #puts "do_new";p blck
-#       var=parse_args(blck[1],filter).strip
-#       var = var[1..-1] if var[0,1]==":"
-#       i=2
-#       if blck[i]==:of
-#         i,*b2=next_block(blck,2)
-#         klass=parse(b2,filter).split(",").map{|e| e.strip}.join(",")
-#       else
-#         return
-#       end
-#       i+=1
-#       inR=@rEnvir[0]
-#       if blck[i]==:in
-#         i,*b2=next_block(blck,i)
-# #p b2
-# #p filter.envir.local["self"]
-#         inR=parse(b2,filter).strip
-# #p inR
-#         inR,parentR=inR.split("<").map{|e| e.strip}
-#         parentR=@rEnvir[0] unless parentR or  RServer.exist?(parentR)
-# #p parentR 
-#         RServer.new_envir(inR,parentR) unless RServer.exist?(inR)
-#         i+=1
-#       end
-# #puts "do_new:var,klass";p var;p klass
+    def do_new(tex,blck,filter)
+      #first declaration of the object
+#puts "do_new";p blck
+      var=parse_args(blck[1],filter).strip
+      var = var[1..-1] if var[0,1]==":"
+      i=2
+      if blck[i]==:of
+        i,*b2=next_block(blck,2)
+        klass=parse(b2,filter).split(",").map{|e| e.strip}.join(",")
+      else
+        return
+      end
+      i+=1
+      inR=@rEnvir[0]
+      if blck[i]==:in
+        i,*b2=next_block(blck,i)
+#p b2
+#p filter.envir.local["self"]
+        inR=parse(b2,filter).strip
+#p inR
+        inR,parentR=inR.split("<").map{|e| e.strip}
+        parentR=@rEnvir[0] unless parentR or  RServer.exist?(parentR)
+#p parentR 
+        RServer.new_envir(inR,parentR) unless RServer.exist?(inR)
+        i+=1
+      end
+#puts "do_new:var,klass";p var;p klass
 # =begin
 #       b2=blck[4..-1].map{|e| 
 #         if e.is_a? Array and e[0]==:named
@@ -1135,49 +1129,49 @@ end
 #         e
 #       }
 # =end
-#       b2=[[:named,var+".Class",[:main,klass]]]
-#       b2+=[:",",[:named,var+".Renvir",[:main,inR]]]
-# #puts "do_new:b2";p b2
-#       b=make_var_block(b2.unshift(:var),filter)
-# #puts "do_new:var";p b
-#       eval_VARS(b,filter)
-# #puts "do_new:eval_VARS";p filter.envir.local
-#       # and then call of the initialize method here called new.(Class)
+      b2=[[:named,var+".Class",[:main,klass]]]
+      b2+=[:",",[:named,var+".Renvir",[:main,inR]]]
+#puts "do_new:b2";p b2
+      b=make_var_block(b2.unshift(:var),filter)
+#puts "do_new:var";p b
+      eval_VARS(b,filter)
+#puts "do_new:eval_VARS";p filter.envir.local
+      # and then call of the initialize method here called new.(Class)
 # =begin
 #       call="new"
 #       bCall=get_method(call,get_klass(klass))
 # p call
 # =end
-#       b2=[] << :call<< [:args,[:main,"new"]] << [:named,"self",[:main,var]]
-# #p blck[4..-1]
-#       b2 += blck[i..-1]
-# #puts "do_new:new b2";p b2
-#       tex += parse([b2],filter)
-#       #tex << eval_CALL("new",b,filter)
-#     end
+      b2=[] << :call<< [:args,[:main,"new"]] << [:named,"self",[:main,var]]
+#p blck[4..-1]
+      b2 += blck[i..-1]
+#puts "do_new:new b2";p b2
+      tex += parse([b2],filter)
+      #tex << eval_CALL("new",b,filter)
+    end
 
-#     def do_super(tex,blck,filter)
-#       #first declaration of the object
-#       var=parse_args(blck[1],filter).strip
-#       i=2
-#       parent=1
-#       if blck[i]==:parent
-#         i,*b2=next_block(blck,2)
-#         parent=parse(b2,filter).to_i
-#         parent=1 if parent==0
-#         i+=1
-#       end
-#       #find next class!
-#       super_meth=get_super_method(parent)
-# #p super_meth
-#       return "" unless super_meth
-#       #build the updtaed block
-#       b2=[] << :call<< [:args,[:main,super_meth]] << [:named,"self",[:main,var]]
-#       b2+=blck[i..-1]
-# #puts "super b2";p b2
-#       tex += parse([b2],filter)
-#       #tex << eval_CALL("new",b,filter)
-#     end
+    def do_super(tex,blck,filter)
+      #first declaration of the object
+      var=parse_args(blck[1],filter).strip
+      i=2
+      parent=1
+      if blck[i]==:parent
+        i,*b2=next_block(blck,2)
+        parent=parse(b2,filter).to_i
+        parent=1 if parent==0
+        i+=1
+      end
+      #find next class!
+      super_meth=get_super_method(parent)
+#p super_meth
+      return "" unless super_meth
+      #build the updtaed block
+      b2=[] << :call<< [:args,[:main,super_meth]] << [:named,"self",[:main,var]]
+      b2+=blck[i..-1]
+#puts "super b2";p b2
+      tex += parse([b2],filter)
+      #tex << eval_CALL("new",b,filter)
+    end
 
     def make_call(blck,filter)
       code,codename,var={"default"=>[:blck]},"default",[]
@@ -1275,169 +1269,169 @@ end
     end
 
 
-#     def make_style_meth(meth,klass,blck)
-#       b=[:meth, [:args, [:main, "#{name_style(meth)}.Style#{klass}"]]]
-#       b += [:","] if ((blck[0].is_a? Array) and ([:main,:named].include? blck[0][0]))
-#       b += blck
-# #p b
-#       return b
-#     end
+    def make_style_meth(meth,klass,blck)
+      b=[:meth, [:args, [:main, "#{name_style(meth)}.Style#{klass}"]]]
+      b += [:","] if ((blck[0].is_a? Array) and ([:main,:named].include? blck[0][0]))
+      b += blck
+#p b
+      return b
+    end
 
-#     def make_style_new(klass,blck)
-#       b=[:new, [:args,blck[0]],:of, [:main, "Style#{klass}"]]+blck[1..-1]
-# #puts "make_style_new";p b
-#       return b
-#     end
+    def make_style_new(klass,blck)
+      b=[:new, [:args,blck[0]],:of, [:main, "Style#{klass}"]]+blck[1..-1]
+#puts "make_style_new";p b
+      return b
+    end
 
-#     ## this allows us to consider independently the calls {#p] and {@p] for user-defined only methods!!!!
-#     def name_style(call)
-#       call=="new" ? call : "_style_"+call
-#     end
+    ## this allows us to consider independently the calls {#p] and {@p] for user-defined only methods!!!!
+    def name_style(call)
+      call=="new" ? call : "_style_"+call
+    end
 
-#     def make_style_call(call,obj,blck)
-#       b=[:call, [:args, [:main, name_style(call)]], [:main, obj]]
-#       unless blck.empty? #call not of the form {@toto@}
-#       	b += [:","]
-#       	#if only a block is given without parameter => no comma! => THIS IS NOT POSSIBLE BECAUSE OF THE CODE ARGUMENT!
-#       #puts "make_style_call:blck";p blck
-#       	b += ((blck[0].is_a? Array) ? blck : [blck])
-#       end
-# #puts "make_style_call";p b
-#       b
-#     end
+    def make_style_call(call,obj,blck)
+      b=[:call, [:args, [:main, name_style(call)]], [:main, obj]]
+      unless blck.empty? #call not of the form {@toto@}
+      	b += [:","]
+      	#if only a block is given without parameter => no comma! => THIS IS NOT POSSIBLE BECAUSE OF THE CODE ARGUMENT!
+      #puts "make_style_call:blck";p blck
+      	b += ((blck[0].is_a? Array) ? blck : [blck])
+      end
+#puts "make_style_call";p b
+      b
+    end
 
-#     def register_style_init
-#       @styles={:cmd=>{},:class=>{},:alias=>{}} unless @styles
-#     end
+    def register_style_init
+      @styles={:cmd=>{},:class=>{},:alias=>{}} unless @styles
+    end
 
-#     def register_style_meth(klass,meth)
-#       register_style_init
-#       @styles[:class][klass]=[] unless @styles[:class][klass]
-#       @styles[:class][klass] << meth
-#       @styles[:class][klass].uniq!
-#     end
+    def register_style_meth(klass,meth)
+      register_style_init
+      @styles[:class][klass]=[] unless @styles[:class][klass]
+      @styles[:class][klass] << meth
+      @styles[:class][klass].uniq!
+    end
 
-#     def register_style_cmds(cmds,style,force=nil)
-#       ## register cmds
-#       register_style_init
-#       cmds.each{|cmd| 
-#         @styles[:cmd][cmd]=style if force or !@styles[:cmd][cmd]
-#       }
-#     end 
+    def register_style_cmds(cmds,style,force=nil)
+      ## register cmds
+      register_style_init
+      cmds.each{|cmd| 
+        @styles[:cmd][cmd]=style if force or !@styles[:cmd][cmd]
+      }
+    end 
 
-#     def do_style(tex,blck,filter)
-#       call=parse_args(blck[1],filter)
-# #p call
-#       call=call.split(":")
-# #puts "style:call";p call
-# #p @styles
-# #p blck[2..-1]
-#       if call[0][0,1]=~/[A-Z]/
-#       	# style declaration
-#       	unless call[1]
-#       	  # instance of new object
-#       	  b=make_style_new(call[0],blck[2..-1])
-#       	  do_new(tex,b,filter)
-#       	  style=parse_args(b[1],filter)
-#       #p style
-#       	  register_style_cmds(@styles[:class][call[0]],style)
-#       	else
-#       	  case call[1]
-#       	  when "new"
-#       	    # constructor style method called instance is demanded
-#       	    register_style_init
-#       	    b=make_style_meth("new",call[0],blck[2..-1])
-#             #p b
-#       	    do_meth(tex,b,filter)
-#       	    b=make_style_new(call[0],[[:main,call[0][0,1].downcase+call[0][1..-1] ]]) #,:<])
-#             #p b
-#             #p filter.envir
-#       	    do_new(tex,b,filter)
-#             #p filter.envir
-#       	  else
-#             #puts "register style meth:#{call[1]}.#{call[0]}"
-#       	    # style cmd method
-#       	    b=make_style_meth(call[1],call[0],blck[2..-1])
-#       	    do_meth(tex,b,filter)
-#       	    # register a new meth for this new Style Class
-#       	    register_style_meth(call[0],call[1])
-#       	    register_style_cmds([call[1]],call[0][0,1].downcase+call[0][1..-1])
-#       	  end
-#       	end
-#       elsif call[0]=="style"
-#       	if call[1]=="cmds"
-#       	  style=blck[2][1].strip
-#       	  cmds=(blck[4] ? blck[4][1] : nil)
-#       	  cmds=cmds.split(",").map{|cmd| cmd.strip} if cmds
-#       	  if @vars[style+".Class"]
-#       	    klass=@vars[style+".Class"][5..-1]
-#       	    cmds=(cmds ? cmds & @styles[:class][klass] : @styles[:class][klass] )
-#       	    register_style_cmds(cmds,style,true)
-#       	  end
-#       	elsif call[1]=="alias" and @styles
-#       	    aliases=parse([blck[2]],filter).split(",")
-#       	    value=parse([blck[4]],filter)
-#       	    aliases.each{|a| 
-#       	      @styles[:alias][a]=value 
-#       	    }
-#       	end
-#       else
-#       	# cmd style call
-#       	no_obj=call.length==1
-#       	obj,cmds=(no_obj ? [nil]+call : call)
+    def do_style(tex,blck,filter)
+      call=parse_args(blck[1],filter)
+#p call
+      call=call.split(":")
+#puts "style:call";p call
+#p @styles
+#p blck[2..-1]
+      if call[0][0,1]=~/[A-Z]/
+      	# style declaration
+      	unless call[1]
+      	  # instance of new object
+      	  b=make_style_new(call[0],blck[2..-1])
+      	  do_new(tex,b,filter)
+      	  style=parse_args(b[1],filter)
+      #p style
+      	  register_style_cmds(@styles[:class][call[0]],style)
+      	else
+      	  case call[1]
+      	  when "new"
+      	    # constructor style method called instance is demanded
+      	    register_style_init
+      	    b=make_style_meth("new",call[0],blck[2..-1])
+            #p b
+      	    do_meth(tex,b,filter)
+      	    b=make_style_new(call[0],[[:main,call[0][0,1].downcase+call[0][1..-1] ]]) #,:<])
+            #p b
+            #p filter.envir
+      	    do_new(tex,b,filter)
+            #p filter.envir
+      	  else
+            #puts "register style meth:#{call[1]}.#{call[0]}"
+      	    # style cmd method
+      	    b=make_style_meth(call[1],call[0],blck[2..-1])
+      	    do_meth(tex,b,filter)
+      	    # register a new meth for this new Style Class
+      	    register_style_meth(call[0],call[1])
+      	    register_style_cmds([call[1]],call[0][0,1].downcase+call[0][1..-1])
+      	  end
+      	end
+      elsif call[0]=="style"
+      	if call[1]=="cmds"
+      	  style=blck[2][1].strip
+      	  cmds=(blck[4] ? blck[4][1] : nil)
+      	  cmds=cmds.split(",").map{|cmd| cmd.strip} if cmds
+      	  if @vars[style+".Class"]
+      	    klass=@vars[style+".Class"][5..-1]
+      	    cmds=(cmds ? cmds & @styles[:class][klass] : @styles[:class][klass] )
+      	    register_style_cmds(cmds,style,true)
+      	  end
+      	elsif call[1]=="alias" and @styles
+      	    aliases=parse([blck[2]],filter).split(",")
+      	    value=parse([blck[4]],filter)
+      	    aliases.each{|a| 
+      	      @styles[:alias][a]=value 
+      	    }
+      	end
+      else
+      	# cmd style call
+      	no_obj=call.length==1
+      	obj,cmds=(no_obj ? [nil]+call : call)
 # =begin
 #       	if obj and !@vars[obj+".Class"]
 #       	  cmds.unshift(obj)
 #       	  obj=nil
 #       	end
 # =end
-#       	#recursive alias replacement
+      	#recursive alias replacement
 
-#       ##TODO: it seems that no call in new is possible!
-#       #p cmds
-#       #register_style_init
-#       #p @styles
-#       	while !(aliases=(cmds.split("|") & @styles[:alias].keys)).empty?
-#       	  aliases.each{|a| cmds=cmds.gsub(a,@styles[:alias][a])}
-#       	end
-#       #puts "cmds";p cmds
-#       	cmds=cmds.split("|")
-#       #puts "cmds2";p cmds
-#       #TODO: facility to define alias for style!?!?!
-#       	b=blck[2..-1]
-#       #p cmds
-#       	cmds.reverse.each{|cmd|
-#       	  obj=@styles[:cmd][cmd] if no_obj
-#       #p @filter.envir
-#       	  b=make_style_call(cmd,obj,b)
-#       #p b
-#       	}
-#       #puts "style:call";p b
-#       	do_call(tex,b,filter)
-#       end
-#     end
+      ##TODO: it seems that no call in new is possible!
+      #p cmds
+      #register_style_init
+      #p @styles
+      	while !(aliases=(cmds.split("|") & @styles[:alias].keys)).empty?
+      	  aliases.each{|a| cmds=cmds.gsub(a,@styles[:alias][a])}
+      	end
+      #puts "cmds";p cmds
+      	cmds=cmds.split("|")
+      #puts "cmds2";p cmds
+      #TODO: facility to define alias for style!?!?!
+      	b=blck[2..-1]
+      #p cmds
+      	cmds.reverse.each{|cmd|
+      	  obj=@styles[:cmd][cmd] if no_obj
+      #p @filter.envir
+      	  b=make_style_call(cmd,obj,b)
+      #p b
+      	}
+      #puts "style:call";p b
+      	do_call(tex,b,filter)
+      end
+    end
 
-#     def do_loop(tex,blck,filter)
-#       ## last executing !!!
-#       ## To think about environment!!!
-#       cond=true
-# #p blck
-#       while cond
-#         i=-1
-#         begin
+    def do_loop(tex,blck,filter)
+      ## last executing !!!
+      ## To think about environment!!!
+      cond=true
+#p blck
+      while cond
+        i=-1
+        begin
 
-#           case blck[i+=1]
-#           when :loop
-#             i,*b2=next_block(blck,i)
-#             tex += parse(b2,filter)
-#           when :break
-#             cond=!eval_args(blck[i+=1],filter)
-#             i,*b2=next_block(blck,i)
-#             tex += parse(b2,filter) if cond
-# 	  end
-# 	end while cond and i<blck.length-1
-#       end
-#     end
+          case blck[i+=1]
+          when :loop
+            i,*b2=next_block(blck,i)
+            tex += parse(b2,filter)
+          when :break
+            cond=!eval_args(blck[i+=1],filter)
+            i,*b2=next_block(blck,i)
+            tex += parse(b2,filter) if cond
+	  end
+	end while cond and i<blck.length-1
+      end
+    end
 
     def do_document(tex,blck,filter)
       i=0
@@ -1655,181 +1649,187 @@ end
 #puts "tex in case";p tex
     end
 
-#     def do_r(tex,blck,filter)
-#       newblck=blck[0]
-# #puts "do_r";p blck
-#       filter.outType=":r"
-#       i=0
-#       i,*b2=next_block(blck,i)
-#       code=parse(b2,filter)
-#       inR=nil
-#       if blck[i+=1]==:in
-#         i,*b2=next_block(blck,i)
-#         inR=parse(b2,filter).strip
-#         RServer.new_envir(inR,@rEnvir[0]) unless RServer.exist?(inR)
-#       end
-#       @rEnvir.unshift(inR) if inR
-# #puts "do_r:code";p code;p eval_RCODE(code,filter,true,true) if newblck==:"r>"
-#       if newblck==:"r>"
-#         tex2=eval_RCODE(code,filter,:pretty=> true,:capture=> true)
-#         ## Dyndoc.warn "rrrrrrrrrrrrrrr: tex2", tex2
-#         tex += tex2
-#       else
-# 	# pretty is put to false because prettyNum does not accept empty output or something like that!
-#         eval_RCODE(code,filter,:pretty=> false)
-#       end
-#       @rEnvir.shift if inR
-#       filter.outType=nil
-#     end
+    def do_r(tex,blck,filter)
+      newblck=blck[0]
+#puts "do_r";p blck
+      filter.outType=":r"
+      i=0
+      i,*b2=next_block(blck,i)
+      code=parse(b2,filter)
+      inR=nil
+      if blck[i+=1]==:in
+        i,*b2=next_block(blck,i)
+        inR=parse(b2,filter).strip
+        RServer.new_envir(inR,@rEnvir[0]) unless RServer.exist?(inR)
+      end
+      #p [:do_r,inR]
+      @rEnvir.unshift(inR) if inR
+#puts "do_r:code";p code;p eval_RCODE(code,filter,true,true) if newblck==:"r>"
+      if newblck==:"r>"
+        tex2=eval_RCODE(code,filter,:pretty=> true,:capture=> true)
+        ## Dyndoc.warn "rrrrrrrrrrrrrrr: tex2", tex2
+        tex += tex2
+      else
+	# pretty is put to false because prettyNum does not accept empty output or something like that!
+        eval_RCODE(code,filter,:pretty=> false)
+      end
+      @rEnvir.shift if inR
+      filter.outType=nil
+    end
 
-#     def do_renv(tex,blck,filter)
-#       inR=parse_args(blck,filter).strip
-# #p inR
-#       mode=:ls
-#       case inR[-1,1]
-#       when "+"
-#         mode=:attach
-#         inR=inR[0...-1]
-#       when "-"
-#         mode=:detach
-#         inR=inR[0...-1]
-#       when "?"
-#         mode=:show
-#         inR=inR[0...-1]
-#       end
-#       unless [:detach,:ls].include? mode
-# #puts "#{inR} EXIST?";p RServer.exist?(inR);"print(ls(.GlobalEnv$.env4dyn))".to_R
-#         RServer.new_envir(inR,@rEnvir[0]) unless RServer.exist?(inR)
-#       end
-#       case mode
-#       when :ls
-#         unless inR.empty?
-#           begin
-#             inRTmp=eval(inR)
-#             inR=(inRTmp.is_a? Regexp) ? inRTmp : /#{inR}/
-#           rescue
-#             inR=/#{inR}/
-#           end
-#         end
-#         tex += ((inR.is_a? Regexp) ? @rEnvir.select{|rEnv| rEnv=~ inR} : @rEnvir ).join(",")
-#       when :attach
-#         @rEnvir.unshift(inR) unless inR.empty?
-#       when :detach
-#         if inR.empty?
-#           @rEnvir.shift
-#         else
-#           if w=@rEnvir.index(inR)
-#             @rEnvir.delete_at(w) 
-#           end
-#         end
-#       when :show
-#         tex += (inR.empty? ? @rEnvir[0] : (@rEnvir[0]==inR).to_s)
-#       end
-#     end
+    def do_renv(tex,blck,filter)
+      inR=parse_args(blck,filter).strip
+#p inR
+      mode=:ls
+      case inR[-1,1]
+      when "+"
+        mode=:attach
+        inR=inR[0...-1]
+      when "-"
+        mode=:detach
+        inR=inR[0...-1]
+      when "?"
+        mode=:show
+        inR=inR[0...-1]
+      end
+      unless [:detach,:ls].include? mode
+#puts "#{inR} EXIST?";p RServer.exist?(inR);"print(ls(.GlobalEnv$.env4dyn))".to_R
+        RServer.new_envir(inR,@rEnvir[0]) unless RServer.exist?(inR)
+      end
+      case mode
+      when :ls
+        unless inR.empty?
+          begin
+            inRTmp=eval(inR)
+            inR=(inRTmp.is_a? Regexp) ? inRTmp : /#{inR}/
+          rescue
+            inR=/#{inR}/
+          end
+        end
+        tex += ((inR.is_a? Regexp) ? @rEnvir.select{|rEnv| rEnv=~ inR} : @rEnvir ).join(",")
+      when :attach
+        @rEnvir.unshift(inR) unless inR.empty?
+      when :detach
+        if inR.empty?
+          @rEnvir.shift
+        else
+          if w=@rEnvir.index(inR)
+            @rEnvir.delete_at(w) 
+          end
+        end
+      when :show
+        tex += (inR.empty? ? @rEnvir[0] : (@rEnvir[0]==inR).to_s)
+      end
+    end
 
-#     def do_rverb(tex,blck,filter)
-# #      require 'pry'
-# #      binding.pry
-#       newblck=blck[0]
-#       filter.outType=":r"
-#       i=0
-#       i,*b2=next_block(blck,i)
-# #puts "rverb:b2";p b2
-#       code=parse(b2,filter)
-#       i+=1
-#       inR=nil
-#       if blck[i]==:in
-#         i,*b2=next_block(blck,i)
-#         inR=parse(b2,filter).strip
-#         RServer.new_envir(inR,@rEnvir[0]) unless RServer.exist?(inR)
-#         i+=1
-#       end
-#       mode=@cfg[:mode_doc]
-#       #p [mode,@fmt,@fmtOutput]
-#       mode=@fmtOutput.to_sym if @fmtOutput and ["html","tex","txtl","raw"].include? @fmtOutput
-#       mode=(@fmt and !@fmt.empty? ? @fmt.to_sym : :default) unless mode
-#       if blck[i]==:mode
-#         i,*b2=next_block(blck,i)
-#         mode=parse(b2,filter).strip.to_sym
-#       end
-#       mode=:default if  newblck==:rout #or newblck==:"r>>"
-#       @rEnvir.unshift(inR) if inR
-#       process_r(code)
-# #puts "rverb:rcode";p code
-#       res=RServer.echo_verb(code,@@interactive ? :raw : mode,@rEnvir[0], prompt: (@@interactive ? "R" : ""))
-#       require "dyndoc/common/uv" if @@interactive
-#       warn_level = $VERBOSE;$VERBOSE = nil
-#       tex += (@@interactive ? Uv.parse(res.force_encoding("utf-8"), "xhtml", File.join(Uv.syntax_path,"r.syntax") , false, "solarized",false) : res.force_encoding("utf-8") )
-#       $VERBOSE = warn_level
-# #puts "rverb:result";p res 
-#       @rEnvir.shift if inR
-#       filter.outType=nil
-#     end
+    def do_rverb(tex,blck,filter)
+#      require 'pry'
+#      binding.pry
+      newblck=blck[0]
+      filter.outType=":r"
+      i=0
+      i,*b2=next_block(blck,i)
+#puts "rverb:b2";p b2
+      code=parse(b2,filter)
+      i+=1
+      inR=nil
+      if blck[i]==:in
+        i,*b2=next_block(blck,i)
+        inR=parse(b2,filter).strip
+        RServer.new_envir(inR,@rEnvir[0]) unless RServer.exist?(inR)
+        i+=1
+      end
+      mode=@cfg[:mode_doc]
+      #p [mode,@fmt,@fmtOutput]
+      mode=@fmtOutput.to_sym if @fmtOutput and ["html","tex","txtl","raw"].include? @fmtOutput
+      mode=(@fmt and !@fmt.empty? ? @fmt.to_sym : :default) unless mode
+      if blck[i]==:mode
+        i,*b2=next_block(blck,i)
+        mode=parse(b2,filter).strip.to_sym
+      end
+      mode=:default if  newblck==:rout #or newblck==:"r>>"
+      @rEnvir.unshift(inR) if inR
+      process_r(code)
+#puts "rverb:rcode";p code
+      res=RServer.echo_verb(code,@@interactive ? :raw : mode,@rEnvir[0], prompt: (@@interactive ? "R" : ""))
+##Dyndoc.warn "rverb:after",@@interactive
+      require "dyndoc/common/uv" if @@interactive
+      ##Dyndoc.warn "rverb:after",res
+      warn_level = $VERBOSE;$VERBOSE = nil
+      ##Dyndoc.warn "rverb:after",res
+      ##tex += (@@interactive ? Uv.parse(res.force_encoding("utf-8"), "xhtml", File.join(Uv.syntax_path,"r.syntax") , false, "solarized",false) : res.force_encoding("utf-8") )
+      tex << (@@interactive ? Uv.parse(res, "xhtml", File.join(Uv.syntax_path,"r.syntax") , false, "solarized",false) : res)
+      ##Dyndoc.warn "rverb:after",res
+      $VERBOSE = warn_level
+#Dyndoc.warn "rverb:result",res 
+      @rEnvir.shift if inR
+      filter.outType=nil
+    end
 
-#     def do_rbverb(tex,blck,filter)
-# #      require 'pry'
-# #      binding.pry
-#       newblck=blck[0]
-#       filter.outType=":rb"
-#       i=0
-#       i,*b2=next_block(blck,i)
-# #puts "rverb:b2";p b2
-#       code=parse(b2,filter)
-#       i+=1
+    def do_rbverb(tex,blck,filter)
+#      require 'pry'
+#      binding.pry
+      newblck=blck[0]
+      filter.outType=":rb"
+      i=0
+      i,*b2=next_block(blck,i)
+#puts "rverb:b2";p b2
+      code=parse(b2,filter)
+      i+=1
       
-#       mode=@cfg[:mode_doc]
-#       #p [mode,@fmt,@fmtOutput]
-#       mode=@fmtOutput.to_sym if @fmtOutput and ["html","tex","txtl","raw"].include? @fmtOutput
-#       mode=(@fmt and !@fmt.empty? ? @fmt.to_sym : :default) unless mode
-#       if blck[i]==:mode
-#         i,*b2=next_block(blck,i)
-#         mode=parse(b2,filter).strip.to_sym
-#       end
+      mode=@cfg[:mode_doc]
+      #p [mode,@fmt,@fmtOutput]
+      mode=@fmtOutput.to_sym if @fmtOutput and ["html","tex","txtl","raw"].include? @fmtOutput
+      mode=(@fmt and !@fmt.empty? ? @fmt.to_sym : :default) unless mode
+      if blck[i]==:mode
+        i,*b2=next_block(blck,i)
+        mode=parse(b2,filter).strip.to_sym
+      end
       
-#       process_rb(code)
-#       ## Dyndoc.warn "rverb:rcode";p code
-#       res=RbServer.echo_verb(code,@@interactive ? :raw : mode,@rbEnvir[0])
-#       ## Dyndoc.warn "rbverb:res",res
-#       require "dyndoc/common/uv" if @@interactive
-#       warn_level = $VERBOSE;$VERBOSE = nil
-#       tex += (@@interactive ? Uv.parse(res, "xhtml", File.join(Uv.syntax_path,"ruby.syntax") , false, "solarized",false) : res )
-#       $VERBOSE = warn_level
-# #puts "rverb:result";p res 
+      process_rb(code)
+      ## Dyndoc.warn "rverb:rcode";p code
+      res=RbServer.echo_verb(code,@@interactive ? :raw : mode,@rbEnvir[0])
+      ## Dyndoc.warn "rbverb:res",res
+      require "dyndoc/common/uv" if @@interactive
+      warn_level = $VERBOSE;$VERBOSE = nil
+      tex += (@@interactive ? Uv.parse(res, "xhtml", File.join(Uv.syntax_path,"ruby.syntax") , false, "solarized",false) : res )
+      $VERBOSE = warn_level
+#puts "rverb:result";p res 
       
-#       filter.outType=nil
-#     end
+      filter.outType=nil
+    end
 
-#     def do_jlverb(tex,blck,filter)
-# #      require 'pry'
-# #      binding.pry
-#       newblck=blck[0]
-#       filter.outType=":jl"
-#       i=0
-#       i,*b2=next_block(blck,i)
-# #puts "rverb:b2";p b2
-#       code=parse(b2,filter)
-#       i+=1
+    def do_jlverb(tex,blck,filter)
+#      require 'pry'
+#      binding.pry
+      newblck=blck[0]
+      filter.outType=":jl"
+      i=0
+      i,*b2=next_block(blck,i)
+#puts "rverb:b2";p b2
+      code=parse(b2,filter)
+      i+=1
       
-#       mode=@cfg[:mode_doc]
-#       #p [mode,@fmt,@fmtOutput]
-#       mode=@fmtOutput.to_sym if @fmtOutput and ["html","tex","txtl","raw"].include? @fmtOutput
-#       mode=(@fmt and !@fmt.empty? ? @fmt.to_sym : :default) unless mode
-#       if blck[i]==:mode
-#         i,*b2=next_block(blck,i)
-#         mode=parse(b2,filter).strip.to_sym
-#       end
+      mode=@cfg[:mode_doc]
+      #p [mode,@fmt,@fmtOutput]
+      mode=@fmtOutput.to_sym if @fmtOutput and ["html","tex","txtl","raw"].include? @fmtOutput
+      mode=(@fmt and !@fmt.empty? ? @fmt.to_sym : :default) unless mode
+      if blck[i]==:mode
+        i,*b2=next_block(blck,i)
+        mode=parse(b2,filter).strip.to_sym
+      end
        
-#       process_jl(code)
-# #puts "rverb:rcode";p code
-#       res=JLServer.echo_verb(code,@@interactive ? :raw : mode)
-#       require "dyndoc/common/uv" if @@interactive
-#       warn_level = $VERBOSE;$VERBOSE = nil
-#       tex += (@@interactive ? Uv.parse(res, "xhtml", File.join(Uv.syntax_path,"julia.syntax") , false, "solarized",false) : res )
-#       $VERBOSE = warn_level
-# #puts "rverb:result";p res 
+      process_jl(code)
+#puts "rverb:rcode";p code
+      res=JLServer.echo_verb(code,@@interactive ? :raw : mode)
+      require "dyndoc/common/uv" if @@interactive
+      warn_level = $VERBOSE;$VERBOSE = nil
+      tex += (@@interactive ? Uv.parse(res, "xhtml", File.join(Uv.syntax_path,"julia.syntax") , false, "solarized",false) : res )
+      $VERBOSE = warn_level
+#puts "rverb:result";p res 
       
-#       filter.outType=nil
-#     end
+      filter.outType=nil
+    end
  
     def dynBlock_in_doLangBlock?(blck)
       blck.map{|b| b.respond_to? "[]" and [:>,:<,:<<].include? b[0] }.any?
@@ -2001,89 +2001,89 @@ end
 #=end
 
 
-#     def evalRBlock(id,cpt,tag,lang=:R)
-#       ## this deals with the problem of newBlcks!
-#       ## Dyndoc.warn "block_normal",blckMode_normal?
-#       code=(blckMode_normal? ? @doLangBlock[id][:code][cpt] : "{#blckAnyTag]"+@doLangBlock[id][:code][cpt]+"[#blckAnyTag}" )
-#       ## Dyndoc.warn "codeR",code
-#       @doLangBlock[id][:out]=parse(code,@doLangBlock[id][:filter])
-#       ## Dyndoc.warn "code2R", @doLangBlock[id][:out]
-#       if tag == :>
-#         outcode=@doLangBlock[id][:out].gsub(/\\/,'\\\\\\\\') #to be compatible with R
-#         outcode=outcode.gsub(/\'/,"\\\\\'")
-#         #Dyndoc.warn 
-#         outcode='cat(\''+outcode+'\')'
-#         #Dyndoc.warn "outcode",outcode
-#         outcode.to_R # CLEVER: directly redirect in R output that is then captured
-#       end
-#       if tag == :<<
-#         return ( lang==:R ? RServer.output(@doLangBlock[id][:out],@rEnvir[0],true) : eval(@doLangBlock[id][:out]) )
-#       else
-#         return @doLangBlock[id][:out]
-#       end  
-#     end
+    def evalRBlock(id,cpt,tag,lang=:R)
+      ## this deals with the problem of newBlcks!
+      ## Dyndoc.warn "block_normal",blckMode_normal?
+      code=(blckMode_normal? ? @doLangBlock[id][:code][cpt] : "{#blckAnyTag]"+@doLangBlock[id][:code][cpt]+"[#blckAnyTag}" )
+      ## Dyndoc.warn "codeR",code
+      @doLangBlock[id][:out]=parse(code,@doLangBlock[id][:filter])
+      ## Dyndoc.warn "code2R", @doLangBlock[id][:out]
+      if tag == :>
+        outcode=@doLangBlock[id][:out].gsub(/\\/,'\\\\\\\\') #to be compatible with R
+        outcode=outcode.gsub(/\'/,"\\\\\'")
+        #Dyndoc.warn 
+        outcode='cat(\''+outcode+'\')'
+        #Dyndoc.warn "outcode",outcode
+        outcode.to_R # CLEVER: directly redirect in R output that is then captured
+      end
+      if tag == :<<
+        return ( lang==:R ? RServer.output(@doLangBlock[id][:out],@rEnvir[0],true) : eval(@doLangBlock[id][:out]) )
+      else
+        return @doLangBlock[id][:out]
+      end  
+    end
 
 
-#     def do_R(tex,blck,filter)
-#       ## rBlock stuff
-#       # Dyndoc.warn "do_R",blck
-#       dynBlock=dynBlock_in_doLangBlock?(blck)
-#       if dynBlock 
-#         @doLangBlock=[] unless @doLangBlock
-#         @doLangBlock << {:tex=>'',:code=>[],:out=>'',:filter=>filter,:env=>[]}
-#         rBlockId=@doLangBlock.length-1
-#       end
-#       ## this is R code!
-#       filter.outType=":r"
-#       ## Dyndoc.warn "do_R",filter.envir.local
-#       blck=make_do_lang_blck(blck,rBlockId,:R) #true at the end is for R!
-#       ## Dyndoc.warn "do_R",blck
-#       code = parse_args(blck,filter)
-#       ## Dyndoc.warn "R code="+code
-#       process_r(code)
-#       ## Dyndoc.warn "R CODE="+code
+    def do_R(tex,blck,filter)
+      ## rBlock stuff
+      # Dyndoc.warn "do_R",blck
+      dynBlock=dynBlock_in_doLangBlock?(blck)
+      if dynBlock 
+        @doLangBlock=[] unless @doLangBlock
+        @doLangBlock << {:tex=>'',:code=>[],:out=>'',:filter=>filter,:env=>[]}
+        rBlockId=@doLangBlock.length-1
+      end
+      ## this is R code!
+      filter.outType=":r"
+      ## Dyndoc.warn "do_R",filter.envir.local
+      blck=make_do_lang_blck(blck,rBlockId,:R) #true at the end is for R!
+      ## Dyndoc.warn "do_R",blck
+      code = parse_args(blck,filter)
+      ## Dyndoc.warn "R code="+code
+      process_r(code)
+      ## Dyndoc.warn "R CODE="+code
 
-#       if blck[0]==:"R>"
-#         ## Dyndoc.warn "R>",code
-#         tex2=eval_RCODE(code,filter,:blockR => true)
-#         ## Dyndoc.warn "RRRRRRRRRRRRRRRR: tex2",tex2
-#         tex += tex2 
-#       else
-#         # pretty is put to false because prettyNum does not accept empty output or something like that!
-#         eval_RCODE(code,filter,:pretty=> false)
-#       end
-#       ## revert all the stuff
-#       if dynBlock
-#         @doLangBlockEnvs -= @doLangBlock[rBlockId][:env] #first remove useless envRs
-#         @doLangBlock.pop
-#       end
-#       filter.outType=nil
-#       ## Dyndoc.warn "SORTIE R!",dynBlock,blck,tex2
-#     end
+      if blck[0]==:"R>"
+        ## Dyndoc.warn "R>",code
+        tex2=eval_RCODE(code,filter,:blockR => true)
+        ## Dyndoc.warn "RRRRRRRRRRRRRRRR: tex2",tex2
+        tex += tex2 
+      else
+        # pretty is put to false because prettyNum does not accept empty output or something like that!
+        eval_RCODE(code,filter,:pretty=> false)
+      end
+      ## revert all the stuff
+      if dynBlock
+        @doLangBlockEnvs -= @doLangBlock[rBlockId][:env] #first remove useless envRs
+        @doLangBlock.pop
+      end
+      filter.outType=nil
+      ## Dyndoc.warn "SORTIE R!",dynBlock,blck,tex2
+    end
 
-#     def evalJlBlock(id,cpt,tag,lang=:jl)
-#       ## Dyndoc.warn "evalJlBlock!!!"
-#       ## this deals with the problem of newBlcks!
-#       ## Dyndoc.warn "block_normal",blckMode_normal?
-#       ## Dyndoc.warn "@doLangBlock",@doLangBlock
-#       code=(blckMode_normal? ? @doLangBlock[id][:code][cpt] : "{#blckAnyTag]"+@doLangBlock[id][:code][cpt]+"[#blckAnyTag}" )
-#       ## Dyndoc.warn "codeJL",code
-#       ## Dyndoc.warn "filter",@doLangBlock[id][:filter]
-#       @doLangBlock[id][:out]=parse(code,@doLangBlock[id][:filter])
-#       ## Dyndoc.warn "code2JL",@doLangBlock[id][:out]
-#       ## Dyndoc.warn tag
-#       if tag == :>
-#         outcode=@doLangBlock[id][:out] #.gsub(/\\/,'\\\\\\\\') #to be compatible with R
-#         outcode='print("'+outcode+'")'
-#         ## Dyndoc.warn "outcode",outcode
-#         Julia.exec outcode,:get=>nil # CLEVER: directly redirect in R output that is then captured
-#       end
-#       if tag == :<<
-#         return ( lang==:jl ? JLServer.eval(@doLangBlock[id][:out],@rEnvir[0],true) : eval(@doLangBlock[id][:out]) )
-#       else
-#         return @doLangBlock[id][:out]
-#       end  
-#     end
+    def evalJlBlock(id,cpt,tag,lang=:jl)
+      ## Dyndoc.warn "evalJlBlock!!!"
+      ## this deals with the problem of newBlcks!
+      ## Dyndoc.warn "block_normal",blckMode_normal?
+      ## Dyndoc.warn "@doLangBlock",@doLangBlock
+      code=(blckMode_normal? ? @doLangBlock[id][:code][cpt] : "{#blckAnyTag]"+@doLangBlock[id][:code][cpt]+"[#blckAnyTag}" )
+      ## Dyndoc.warn "codeJL",code
+      ## Dyndoc.warn "filter",@doLangBlock[id][:filter]
+      @doLangBlock[id][:out]=parse(code,@doLangBlock[id][:filter])
+      ## Dyndoc.warn "code2JL",@doLangBlock[id][:out]
+      ## Dyndoc.warn tag
+      if tag == :>
+        outcode=@doLangBlock[id][:out] #.gsub(/\\/,'\\\\\\\\') #to be compatible with R
+        outcode='print("'+outcode+'")'
+        ## Dyndoc.warn "outcode",outcode
+        Julia.exec outcode,:get=>nil # CLEVER: directly redirect in R output that is then captured
+      end
+      if tag == :<<
+        return ( lang==:jl ? JLServer.eval(@doLangBlock[id][:out],@rEnvir[0],true) : eval(@doLangBlock[id][:out]) )
+      else
+        return @doLangBlock[id][:out]
+      end  
+    end
 
 #     def do_jl(tex,blck,filter)
 #       return unless $cfg_dyn[:langs].include? :jl
@@ -2332,80 +2332,79 @@ end
 #       texAry.each{|e| tex += e[:content]}
 #     end
 
-#     def do_opt(tex,blck,filter)
-# #p blck
-# #p parse(blck[1..-1],filter)
-# #p parse(blck[1..-1],filter).split(",").map{|e| e.strip}
-# #p @tags
-#       taglist=parse(blck[1..-1],filter).strip
+    def do_opt(tex,blck,filter)
+#p blck
+#p parse(blck[1..-1],filter)
+#p parse(blck[1..-1],filter).split(",").map{|e| e.strip}
+#p @tags
+      taglist=parse(blck[1..-1],filter).strip
   
-#       taglist.split(",").map{|e| e.strip}.each{|tag|
-#         if tag[0,1]=="-"
-#           @tags.delete(TagManager.init_input_tag(tag[1..-1]))
-#         else
-#   	     tag=tag[1..-1] if tag[0,1]=="+"
-#   	     @tags << TagManager.init_input_tag(tag) 
-#         end
-#       }
-# #puts "ici";p @tags
-#     end
+      taglist.split(",").map{|e| e.strip}.each{|tag|
+        if tag[0,1]=="-"
+          @tags.delete(TagManager.init_input_tag(tag[1..-1]))
+        else
+  	     tag=tag[1..-1] if tag[0,1]=="+"
+  	     @tags << TagManager.init_input_tag(tag) 
+        end
+      }
+#puts "ici";p @tags
+    end
 
-#     def make_yield(tex,codename,filter)
-#       if @def_blck[-1] and @def_blck[-1].keys.include? codename
-# 	#codename="default" unless @def_blck[-1].keys.include? codename
-# #p codename
-# #p @def_blck[-1][codename]
-# #p parse([@def_blck[-1][codename]],filter) if @def_blck[-1][codename]
-#         tex += parse([@def_blck[-1][codename]],filter) if @def_blck[-1][codename]
-# #p filter.envir.local["self"]
-#        end 
-#     end
+    def make_yield(tex,codename,filter)
+      if @def_blck[-1] and @def_blck[-1].keys.include? codename
+	#codename="default" unless @def_blck[-1].keys.include? codename
+#p codename
+#p @def_blck[-1][codename]
+#p parse([@def_blck[-1][codename]],filter) if @def_blck[-1][codename]
+        tex += parse([@def_blck[-1][codename]],filter) if @def_blck[-1][codename]
+#p filter.envir.local["self"]
+       end 
+    end
 
-#     def do_get(tex,blck,filter)
-#       blckname=filter.apply(blck[1][1])
-#       codename=filter.apply(blck[3][1])
-#       if @def_blck[-1] and @def_blck[-1].keys.include? codename
-# 	       @savedBlocks[blckname]=@def_blck[-1][codename]
-# #puts "do_get";p @savedBlocks[blckname]
-#       end
-#     end
+    def do_get(tex,blck,filter)
+      blckname=filter.apply(blck[1][1])
+      codename=filter.apply(blck[3][1])
+      if @def_blck[-1] and @def_blck[-1].keys.include? codename
+	       @savedBlocks[blckname]=@def_blck[-1][codename]
+#puts "do_get";p @savedBlocks[blckname]
+      end
+    end
 
-#      def do_yield(tex,blck,filter)
-# #p blck
-# #p parse(blck[1..-1],filter)
-#       codename=parse(blck[1..-1],filter)
-#       make_yield(tex,codename,filter)
-#     end
+     def do_yield(tex,blck,filter)
+#p blck
+#p parse(blck[1..-1],filter)
+      codename=parse(blck[1..-1],filter)
+      make_yield(tex,codename,filter)
+    end
 
-#     def do_part(tex,blck,filter)
-#       i=0
-#       i,*b2=next_block(blck,i)
-#       file=parse(b2,filter).strip
-#       # prepare the filename
-#       file,part=file.split("|").map{|e| e.strip}
-#       file,out=file.split("#").map{|e| e.strip}
-#       out=(out ? out.to_sym : @cfg[:format_doc])
-#       out=:dyn if [:*,:all].include? out
-#       file=File.join("part",file+"_part"+Dyndoc::EXTS[out])
-#       # part tags prepended by "part:"
-#       part=TagManager.make_tags(part.split(",").map{|e| "part:"+e}.join(",")) if part
-#       #
-#       if File.exist?(file) and (!part or !TagManager.tags_ok?(part,@tags))
-#       	puts "partial #{file} loaded"
-#       	tex += File.read(file)
-#       else
-#       	puts "partial #{file} generated"
-#       	tex2=parse([blck[(i+1)..-1].unshift(:blck)],filter)
-#       	#puts tex2
-#       	Dyndoc.make_dir("part")
-#       	File.open(file,"w") do |f|
-#           f << tex2
-#         end
-#         tex += tex2
-#       end
-#     end
+    def do_part(tex,blck,filter)
+      i=0
+      i,*b2=next_block(blck,i)
+      file=parse(b2,filter).strip
+      # prepare the filename
+      file,part=file.split("|").map{|e| e.strip}
+      file,out=file.split("#").map{|e| e.strip}
+      out=(out ? out.to_sym : @cfg[:format_doc])
+      out=:dyn if [:*,:all].include? out
+      file=File.join("part",file+"_part"+Dyndoc::EXTS[out])
+      # part tags prepended by "part:"
+      part=TagManager.make_tags(part.split(",").map{|e| "part:"+e}.join(",")) if part
+      #
+      if File.exist?(file) and (!part or !TagManager.tags_ok?(part,@tags))
+      	puts "partial #{file} loaded"
+      	tex += File.read(file)
+      else
+      	puts "partial #{file} generated"
+      	tex2=parse([blck[(i+1)..-1].unshift(:blck)],filter)
+      	#puts tex2
+      	Dyndoc.make_dir("part")
+      	File.open(file,"w") do |f|
+          f << tex2
+        end
+        tex += tex2
+      end
+    end
 
-#   end
-
-#   end
-# end
+  end
+  end
+end
