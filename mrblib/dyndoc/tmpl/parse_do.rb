@@ -318,7 +318,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
           #p Utils.dyndoc_raw_var_ls
           #p blckname
           if Utils.dyndoc_raw_var_ls.include? blckname
-            tex += Utils.dyndoc_raw_var_content(blckname,self)
+            tex << Utils.dyndoc_raw_var_content(blckname,self)
           end
         else
           ## fetch the result from the saved result if it exists or force regeneration at the command line!
@@ -571,10 +571,10 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
                   @fmtContainer.unshift newblck
                   val=parse(b2,filter) 
                   if @fmtContainer[1] and @fmtContainer[1]==@fmtContainer[0] #no need to convert!
-                    tex += val
+                    tex << val
                   else #convert
                     ## Dyndoc.warn "txtl formats",[@fmtContainer[0],@fmtOutput,@fmtContainer[1]]
-                    tex += Dyndoc::Converter.convert(val,@fmtContainer[0],@fmtOutput,@fmtContainer[1]) #last parameter: true means to protect
+                    tex << Dyndoc::Converter.convert(val,@fmtContainer[0],@fmtOutput,@fmtContainer[1]) #last parameter: true means to protect
                   end
                   @curFmtContainer=@fmtContainer[0] unless @curFmtContainer
                   @fmtContainer.shift
@@ -824,7 +824,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
 	            if modif
 		            if name[-1,1]=="+"
 		              name=name[0...-1]
-		              modif+="+"
+		              modif += "+"
 		            end
 		            if name[-1,1]=="!"
 #p "!!!!";p name
@@ -925,9 +925,9 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
       i,*b2=next_block(blck,i)
       code=parse(b2,filter)
       Utils.escape!(code,[["{","__OPEN__"],["}","__CLOSE__"]])
-      tex += Dyndoc::VERB[@cfg[:format_doc]][:begin] + "\n"
-      tex += code.strip + "\n"
-      tex += Dyndoc::VERB[@cfg[:format_doc]][:end] + "\n"
+      tex << Dyndoc::VERB[@cfg[:format_doc]][:begin] + "\n"
+      tex << code.strip << "\n"
+      tex << Dyndoc::VERB[@cfg[:format_doc]][:end] + "\n"
     end
 
     def do_eval(tex,blck,filter)
@@ -960,7 +960,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
       Utils.dyndoc_raw_text!(tex2) if mode.include? :last
 #puts  "do_eval:tex2";p tex2
       tex2=Utils.dyndoc_raw_text_add(tex2) if mode.include? :raw
-      tex += tex2
+      tex << tex2
       if i<blck.length-1 and blck[i+=1]==:to
         i,*b2=next_block(blck,i)
         file=parse(b2,filter)
@@ -978,7 +978,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
       file=parse(b2,filter).strip
 #p file
       if File.exist?(file)
-        tex += File.read(file)
+        tex << File.read(file)
       elsif blck[i+=1]==:<<
 #p blck[(i+1)..-1]
         tex2=parse(blck[(i+1)..-1],filter)
@@ -987,7 +987,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
         File.open(file,"w") do |f|
           f << tex2
         end
-        tex += tex2
+        tex << tex2
       end
     end
 
@@ -996,7 +996,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
 #p tmpl
       b=make_var_block(blck[2..-1].unshift(:var),filter)
 #puts "do_input:b";p b
-      tex += eval_INPUT(tmpl,b,filter)
+      tex << eval_INPUT(tmpl,b,filter)
     end
  
     def do_require(tex,blck,filter)   
@@ -1077,7 +1077,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
 #puts "var";p var
       code.unshift(var) unless var.length==1
 #puts "code def #{call}";p code
-      call+= ((call.include? "|") ? "," : "|")+arg.join(",") unless arg.empty?
+      call += ((call.include? "|") ? "," : "|")+arg.join(",") unless arg.empty?
       return [call,code,rbEnvir]
     end
 
@@ -1146,7 +1146,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
 #p blck[4..-1]
       b2 += blck[i..-1]
 #puts "do_new:new b2";p b2
-      tex += parse([b2],filter)
+      tex << parse([b2],filter)
       #tex << eval_CALL("new",b,filter)
     end
 
@@ -1169,7 +1169,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
       b2=[] << :call<< [:args,[:main,super_meth]] << [:named,"self",[:main,var]]
       b2+=blck[i..-1]
 #puts "super b2";p b2
-      tex += parse([b2],filter)
+      tex << parse([b2],filter)
       #tex << eval_CALL("new",b,filter)
     end
 
@@ -1265,7 +1265,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
 #p meth_args_b
 
 #puts "call:out";p eval_CALL(call,b,filter)
-      tex += eval_CALL(call,b,filter,meth_args_b,code)
+      tex << eval_CALL(call,b,filter,meth_args_b,code)
     end
 
 
@@ -1423,11 +1423,11 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
           case blck[i+=1]
           when :loop
             i,*b2=next_block(blck,i)
-            tex += parse(b2,filter)
+            tex << parse(b2,filter)
           when :break
             cond=!eval_args(blck[i+=1],filter)
             i,*b2=next_block(blck,i)
-            tex += parse(b2,filter) if cond
+            tex << parse(b2,filter) if cond
 	  end
 	end while cond and i<blck.length-1
       end
@@ -1668,7 +1668,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
       if newblck==:"r>"
         tex2=eval_RCODE(code,filter,:pretty=> true,:capture=> true)
         ## Dyndoc.warn "rrrrrrrrrrrrrrr: tex2", tex2
-        tex += tex2
+        tex << tex2
       else
 	# pretty is put to false because prettyNum does not accept empty output or something like that!
         eval_RCODE(code,filter,:pretty=> false)
@@ -1706,7 +1706,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
             inR=/#{inR}/
           end
         end
-        tex += ((inR.is_a? Regexp) ? @rEnvir.select{|rEnv| rEnv=~ inR} : @rEnvir ).join(",")
+        tex << ((inR.is_a? Regexp) ? @rEnvir.select{|rEnv| rEnv=~ inR} : @rEnvir ).join(",")
       when :attach
         @rEnvir.unshift(inR) unless inR.empty?
       when :detach
@@ -1718,7 +1718,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
           end
         end
       when :show
-        tex += (inR.empty? ? @rEnvir[0] : (@rEnvir[0]==inR).to_s)
+        tex << (inR.empty? ? @rEnvir[0] : (@rEnvir[0]==inR).to_s)
       end
     end
 
@@ -1792,7 +1792,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
       ## Dyndoc.warn "rbverb:res",res
       require "dyndoc/common/uv" if @@interactive
       warn_level = $VERBOSE;$VERBOSE = nil
-      tex += (@@interactive ? Uv.parse(res, "xhtml", File.join(Uv.syntax_path,"ruby.syntax") , false, "solarized",false) : res )
+      tex << (@@interactive ? Uv.parse(res, "xhtml", File.join(Uv.syntax_path,"ruby.syntax") , false, "solarized",false) : res )
       $VERBOSE = warn_level
 #puts "rverb:result";p res 
       
@@ -1824,7 +1824,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
       res=JLServer.echo_verb(code,@@interactive ? :raw : mode)
       require "dyndoc/common/uv" if @@interactive
       warn_level = $VERBOSE;$VERBOSE = nil
-      tex += (@@interactive ? Uv.parse(res, "xhtml", File.join(Uv.syntax_path,"julia.syntax") , false, "solarized",false) : res )
+      tex << (@@interactive ? Uv.parse(res, "xhtml", File.join(Uv.syntax_path,"julia.syntax") , false, "solarized",false) : res )
       $VERBOSE = warn_level
 #puts "rverb:result";p res 
       
@@ -1983,7 +1983,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
         tex2=@rbIO.pop.string
 #Dyndoc.warn "res",res
 #Dyndoc.warn "RbRbRbRbRbRbRb:", (tex2.empty? ? res : tex2)
-        tex += (tex2.empty? ? res : tex2)
+        tex << (tex2.empty? ? res : tex2)
       else
         @rbIO.pop
       end
@@ -2047,7 +2047,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
         ## Dyndoc.warn "R>",code
         tex2=eval_RCODE(code,filter,:blockR => true)
         ## Dyndoc.warn "RRRRRRRRRRRRRRRR: tex2",tex2
-        tex += tex2 
+        tex << tex2 
       else
         # pretty is put to false because prettyNum does not accept empty output or something like that!
         eval_RCODE(code,filter,:pretty=> false)
@@ -2107,7 +2107,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
 #       process_jl(code)
 #       ## Dyndoc.warn "code_jl",code
 #       if [:"jl>"].include? blck[0]
-#         tex += JLServer.outputs(code,:block => true)
+#         tex << JLServer.outputs(code,:block => true)
 #       else
 #         JLServer.eval(code)
 #       end
@@ -2131,7 +2131,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
 #       code='TeXForm['+code+']' if blck[0]==:"M>"
 #       tex2=Dyndoc::Converter.mathlink(code)
 #       if [:"M>",:"m>"].include? blck[0]
-#         tex += (blck[0]==:"M>" ? ('$'+tex2+'$').gsub("\\\\","\\") : tex2 )
+#         tex << (blck[0]==:"M>" ? ('$'+tex2+'$').gsub("\\\\","\\") : tex2 )
 #       end
 #       filter.outType=nil
 #     end
@@ -2143,7 +2143,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
 # #p blck.length
 #       if blck.length==1
 #         ##p @tags.map{|t| t.inspect}.join(",")
-#         tex += @tags.map{|t| t.inspect}.join(",")
+#         tex << @tags.map{|t| t.inspect}.join(",")
 #         return
 #       end
 #       begin
@@ -2158,7 +2158,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
 #         # fparse if allowed!
 #         if TagManager.tags_ok?(tags,@tags)
 # #p b2
-#           tex += parse(b2,filter)
+#           tex << parse(b2,filter)
 #         end 
 #       end while i<blck.length-1
 #     end
@@ -2252,7 +2252,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
 # 	      $dyn_keys[:current] << lock
 # ##IMPORTANT: put here and not after the parsing otherwise cpt increases abnormally.
 # 	      unless mode_keys==:init
-# 	        tex += "__DYNKEYS#{$dyn_keys[:cpt]}__"
+# 	        tex << "__DYNKEYS#{$dyn_keys[:cpt]}__"
 # 	      end
 # 	      KeysManager.begin(lock_keys_orig,lock,@keys)
 # 	      @lock=lock #to use inside dyndoc!
@@ -2329,7 +2329,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
 #       texAry=keys_sort(texAry) if @keys["order"]
 #       #puts "SORTED"
 #       #keys_show(texAry)
-#       texAry.each{|e| tex += e[:content]}
+#       texAry.each{|e| tex << e[:content]}
 #     end
 
     def do_opt(tex,blck,filter)
@@ -2356,7 +2356,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
 #p codename
 #p @def_blck[-1][codename]
 #p parse([@def_blck[-1][codename]],filter) if @def_blck[-1][codename]
-        tex += parse([@def_blck[-1][codename]],filter) if @def_blck[-1][codename]
+        tex << parse([@def_blck[-1][codename]],filter) if @def_blck[-1][codename]
 #p filter.envir.local["self"]
        end 
     end
@@ -2392,7 +2392,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
       #
       if File.exist?(file) and (!part or !TagManager.tags_ok?(part,@tags))
       	puts "partial #{file} loaded"
-      	tex += File.read(file)
+      	tex << File.read(file)
       else
       	puts "partial #{file} generated"
       	tex2=parse([blck[(i+1)..-1].unshift(:blck)],filter)
@@ -2401,7 +2401,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
       	File.open(file,"w") do |f|
           f << tex2
         end
-        tex += tex2
+        tex << tex2
       end
     end
 
