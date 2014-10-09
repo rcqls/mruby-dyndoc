@@ -64,12 +64,12 @@ module Dyndoc
     def initialize(tmpl_cfg,with=true)
       # just in case it is not yet initialized!
       $cfg_dyn={} unless $cfg_dyn
-      p [:mngr_cfg,$cfg_dyn]
+      ##p [:mngr_cfg,$cfg_dyn]
       unless $cfg_dyn[:langs]
         $cfg_dyn[:langs]=[] 
         $cfg_dyn[:langs] << :R if with==true
       end
-      p [:mngr_cfg2,$cfg_dyn]
+
 #puts "DEBUT INIT TemplateManager"
       @tmpl_cfg=tmpl_cfg
 #=begin
@@ -77,7 +77,6 @@ module Dyndoc
 #=end
       ## default system root appended
       ## To remove: Dyndoc.setRootDoc(@cfg[:rootDoc],Dyndoc.sysRootDoc("root_"+@cfg[:enc]),false)
-      p [:mngr_with_R,($cfg_dyn[:langs].include? :R)]
       TemplateManager.initR if $cfg_dyn[:langs].include? :R
       # TemplateManager.initJulia if $cfg_dyn[:langs].include? :jl
       rbenvir_init(binding)
