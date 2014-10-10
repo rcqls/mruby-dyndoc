@@ -17,7 +17,7 @@ char* mrb_load_string_to_cstr(mrb_state *mrb,char* code) {
 int mrb_init_dyndoc(mrb_state *mrb) {
 
 	mrb_value init;
-	init = mrb_load_string(mrb,"$tmpl_mngr = Dyndoc::MRuby::TemplateManager.new({});$tmpl_mngr.init_doc({})");
+	init = mrb_load_string(mrb,"unless $tmpl_mngr\n$tmpl_mngr = Dyndoc::MRuby::TemplateManager.new({})\n$tmpl_mngr.init_doc({})\nend");
 	
 	return (int)(!mrb_nil_p(init));
 }
@@ -31,3 +31,14 @@ char* mrb_process_dyndoc(mrb_state *mrb, char* code) {
 	res = mrb_load_string_to_cstr(mrb,cmd);
 	return res;
 }
+
+void
+mrb_mruby_dyndoc_gem_init(mrb_state* mrb)
+{
+}
+
+void
+mrb_mruby_dyndoc_gem_final(mrb_state* mrb)
+{
+}
+

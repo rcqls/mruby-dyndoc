@@ -23,7 +23,7 @@ var txt="{#document][#main][#>]toto[TOTO][#r<]a=\"joe\"[#>]<<<\n\
 	titééi #{toto}\n\
 	[#?]#{+?toto}[#>]PLUS\n\
 	[#?]#{=toto} == \"TOTO\"[#>]PLUS2\n\
-	[#rb<]@tata=\"joe\"\n\
+	[#r>>]runif(2)[#rb<]@tata=\"joe\"\n\
 [#nl][#>]tata is :{@tata}[#nl]\n\
 {#case]:{@tata},#{toto},:r{a}\n\
 [#when]joe[#>]I am JOE\n\
@@ -32,7 +32,7 @@ var txt="{#document][#main][#>]toto[TOTO][#r<]a=\"joe\"[#>]<<<\n\
 [#>]{#rverb]rnorm(10)[#rverb}\n\
 	>>>[#}"
 
-//var init=function() {
+
 var mrb = mrb_ffi.mrb_open();
 var res = mrb_ffi.mrb_load_string_to_cstr(mrb,"$a='hello world!'");
 //mrb_ffi.mrb_p(mrb,tmp);
@@ -47,6 +47,7 @@ console.log("res:"+res);
 //mrb_ffi.mrb_load_string_to_cstr(mrb,"$tmpl_mngr = Dyndoc::MRuby::TemplateManager.new({});$tmpl_mngr.init_doc({})");
 //var res=mrb_ffi.mrb_load_string_to_cstr(mrb,"$tmpl_mngr.parse("+txt+")");
 mrb_ffi.mrb_init_dyndoc(mrb);
+mrb_ffi.mrb_init_dyndoc(mrb); //no problem only initialized once!
 var res = mrb_ffi.mrb_process_dyndoc(mrb,txt);
 
 console.log("res:"+res);
@@ -54,8 +55,4 @@ var res2 = mrb_ffi.mrb_process_dyndoc(mrb,txt);
 
 console.log("res2:"+res2);
 mrb_ffi.mrb_close(mrb);
-//}
-
-// var eval=function(cmd) {
-// 	rffi.rffi_eval(cmd,1);
-// }
+ 
