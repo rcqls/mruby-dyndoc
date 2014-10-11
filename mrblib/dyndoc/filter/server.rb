@@ -60,26 +60,26 @@ module Dyndoc
 	Binding = Kernel
 
     def RbServer.output(code,rbEnvir=nil,opts={:error=>"ERROR"})
-    	#Dyndoc.warn "output",[code,rbEnvir]
+    	##Dyndoc.warn "output",[code,rbEnvir]
 	    begin
 	    	#p [:rbEnvir,rbEnvir,rbEnvir.nil?]
-	    	if rbEnvir.is_a? Symbol
+	    	# if rbEnvir.is_a? Symbol
 		    	#Dyndoc.warn [:nil]
-		    	out = eval(code)
-	        elsif rbEnvir.is_a? Binding
-	        	#Dyndoc.warn [:Binding]
-		    	out=rbEnvir.eval(code)
-		    elsif rbEnvir.is_a? Module
-		    	#Dyndoc.warn :Module
-		        out=rbEnvir.module_eval(code)
-		    else
-		    	#Dyndoc.warn "ici"
-		    	out=rbEnvir.instance_eval(code)
-		    end
+		    	out = dyndoc_cxt_eval(code)
+	     #    elsif rbEnvir.is_a? Binding
+	     #    	#Dyndoc.warn [:Binding]
+		    # 	out=rbEnvir.eval(code)
+		    # elsif rbEnvir.is_a? Module
+		    # 	#Dyndoc.warn :Module
+		    #     out=rbEnvir.dyndoc_cxt_eval(code)
+		    # else
+		    # 	#Dyndoc.warn "ici"
+		    # 	out=rbEnvir.instance_eval(code)
+		    # end
 
 		    #Dyndoc.warn "out",out
 	    rescue
-	    	#Dyndoc.warn :rescue
+	    	##Dyndoc.warn :rescue
 	    	if RUBY_VERSION >= "1.9.3" and rbEnvir.is_a? Binding and rbEnvir.eval("local_variables").include? :childBinding 
 	    		begin 
 		    		rbEnvir2=rbEnvir.eval("childBinding")

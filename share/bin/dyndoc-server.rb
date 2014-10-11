@@ -45,10 +45,10 @@ module Dyndoc
         puts "connected (peer: #{c.getpeername})"
         c.read_start {|b|
           data = b.to_s.strip
-          p [:data,data]
+          ##p [:data,data]
             if data =~ /^__send_cmd__\[\[([a-z]*)\]\]__(.*)__\[\[END_TOKEN\]\]__$/m
               cmd,content = $1,$2
-              p [:cmd,cmd,:content,content]
+              ##p [:cmd,cmd,:content,content]
               if cmd == "dyndoc"
                 res = process_dyndoc(content)
                 c.write "__send_cmd__[[dyndoc]]__"+res+"__[[END_TOKEN]]__"
