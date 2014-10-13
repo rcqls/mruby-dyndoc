@@ -24,13 +24,16 @@ MRuby::Build.new do |conf|
   conf.gem :github => 'iij/mruby-io' 
   conf.gem :github => 'iij/mruby-dir'
   conf.gem :github => 'iij/mruby-tempfile' 
-  conf.gem :github => 'mattn/mruby-onig-regexp'
+  #conf.gem :github => 'mattn/mruby-onig-regexp'
+  conf.gem :github => 'mattn/mruby-pcre-regexp'
   conf.gem :github => 'mattn/mruby-uv'
   conf.gem :github => 'iij/mruby-env'
   conf.gem :github => 'iij/mruby-require'
   #conf.gem :github => 'mattn/mruby-require'
-  conf.gem '/Users/remy/Github/mruby-R4rb'
-  conf.gem '/Users/remy/Github/mruby-dyndoc' 
+  #conf.gem '/Users/remy/Github/mruby-R4rb'
+  #conf.gem '/Users/remy/Github/mruby-dyndoc'
+  conf.gem :github => 'rcqls/mruby-R4rb'
+  conf.gem :github => 'rcqls/mruby-dyndoc' 
 
   # # C compiler settings
   #  conf.cc do |cc|
@@ -93,14 +96,14 @@ end
 # Define cross build settings
 # MRuby::CrossBuild.new('32bit') do |conf|
 #   toolchain :gcc
-#
+
 #   conf.cc.flags << "-m32"
 #   conf.linker.flags << "-m32"
-#
-#   conf.build_mrbtest_lib_only
-#
-#   conf.gem 'examples/mrbgems/c_and_ruby_extension_example'
-#
-#   conf.test_runner.command = 'env'
-#
+
+#   # conf.build_mrbtest_lib_only
+
+#   # conf.gem 'examples/mrbgems/c_and_ruby_extension_example'
+
+#   # conf.test_runner.command = 'env'
+
 # end
