@@ -805,7 +805,7 @@ module Dyndoc
     		R4mrb << ".libPaths('"+dyndocTools+"/R/library/"+RUBY_ENGINE+"/"+RUBY_VERSION+"')"
     	end
       	R4mrb << "require(dyndoc)"
-      	R4mrb << "require(rb4R)"
+      	R4mrb << "require(mrb4R)"
     end
 
   end
