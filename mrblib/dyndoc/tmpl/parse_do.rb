@@ -1856,7 +1856,7 @@ Dyndoc.warn "make_named_blck:b2",b2#[0]
           case lang
           when :R
             # first, get the environment
-            codeLangBlock="{.GlobalEnv$.env4dyn$rbBlock#{doLangBlockEnv.to_s} <- environment();.rb(\""+codeLangBlock+"\");invisible()}"
+            codeLangBlock="{.GlobalEnv$.env4dyn$rbBlock#{doLangBlockEnv.to_s} <- environment();.mrb(\""+codeLangBlock+"\");invisible()}"
             # use it to evaluate the dyn block with R stuff! (renv) 
             @doLangBlock[id][:code][cptCode]= "[#<]{#renv]rbBlock#{doLangBlockEnv.to_s}+[#}[#>]"+@doLangBlock[id][:code][cptCode]+"[#<]{#renv]rbBlock#{doLangBlockEnv.to_s}-[#}"
           when :jl
